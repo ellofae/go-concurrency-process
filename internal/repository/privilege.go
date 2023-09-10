@@ -22,25 +22,43 @@ func NewPrivilegeRepository(storage *Storage) domain.IPrivilegeRepository {
 	}
 }
 
-func (pr *PrivilegeRepository) GetRecordByID(id int) (*entity.Privilege, error) {
+func (pr *PrivilegeRepository) GetRecordByID(ctx context.Context, id int) (*entity.Privilege, error) {
 	query := `SELECT * FROM privileges WHERE id = $1`
 
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	entity := &entity.Privilege{}
-	conn, err := pr.storage.GetPgConnPool().Acquire(context.Background())
+	conn, err := pr.storage.GetPgConnPool().Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Release()
 
-	if err := conn.QueryRow(context.Background(), query, id).Scan(&entity.ID, &entity.PrivilegeTitle, &entity.CreatedAt); err != nil {
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	if err := tx.QueryRow(ctx, query, id).Scan(&entity.ID, &entity.PrivilegeTitle, &entity.CreatedAt); err != nil {
 		return nil, err
 	}
 
 	return entity, nil
 }
 
-func (pr *PrivilegeRepository) GetAllRecords() ([]*entity.Privilege, error) {
+func (pr *PrivilegeRepository) GetAllRecords(ctx context.Context) ([]*entity.Privilege, error) {
 	query := `SELECT * FROM privileges`
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	entities := []*entity.Privilege{}
 
@@ -50,7 +68,19 @@ func (pr *PrivilegeRepository) GetAllRecords() ([]*entity.Privilege, error) {
 	}
 	defer conn.Release()
 
-	rows, err := conn.Query(context.Background(), query)
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	rows, err := tx.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -69,63 +99,78 @@ func (pr *PrivilegeRepository) GetAllRecords() ([]*entity.Privilege, error) {
 		return nil, err
 	}
 
-	// if err := pr.postgres_conn.GetDB().Select(&entities, query); err != nil {
-	// 	return nil, err
-	// }
-
 	return entities, nil
 }
 
-func (pr *PrivilegeRepository) CreatePrivilege(req *entity.Privilege) error {
+func (pr *PrivilegeRepository) CreatePrivilege(ctx context.Context, req *entity.Privilege) error {
 	query := `INSERT INTO privileges(privilege_title, created_at) VALUES ($1, $2)`
 
-	conn, err := pr.storage.GetPgConnPool().Acquire(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	conn, err := pr.storage.GetPgConnPool().Acquire(ctx)
 	if err != nil {
 		return err
 	}
 	defer conn.Release()
 
-	_, err = conn.Exec(context.Background(), query, req.PrivilegeTitle, req.CreatedAt)
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	_, err = tx.Exec(ctx, query, req.PrivilegeTitle, req.CreatedAt)
 	if err != nil {
 		return err
 	}
 
-	// tx := pr.postgres_conn.GetDB().MustBegin()
-	// _, err := tx.Exec(query, req.PrivilegeTitle, req.CreatedAt)
-	// if err != nil {
-	// 	return err
-	// }
-	// tx.Commit()
-
 	return nil
 }
 
-func (pr *PrivilegeRepository) UpdatePrivilege(id int, req *dto.PrivilegeUpdateDTO) error {
+func (pr *PrivilegeRepository) UpdatePrivilege(ctx context.Context, id int, req *dto.PrivilegeUpdateDTO) error {
 	query := `UPDATE privileges SET privilege_title = $2 WHERE id = $1`
 
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	conn, err := pr.storage.GetPgConnPool().Acquire(context.Background())
 	if err != nil {
 		return err
 	}
 	defer conn.Release()
 
-	_, err = conn.Exec(context.Background(), query, id, req.PrivilegeTitle)
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
 
-	// tx := pr.postgres_conn.GetDB().MustBegin()
-	// _, err := tx.Exec(query, id, req.PrivilegeTitle)
-	// if err != nil {
-	// 	return err
-	// }
-	// tx.Commit()
+	_, err = tx.Exec(ctx, query, id, req.PrivilegeTitle)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func (pr *PrivilegeRepository) DeletePrivilege(id int) error {
+func (pr *PrivilegeRepository) DeletePrivilege(ctx context.Context, id int) error {
 	query := `DELETE FROM privileges WHERE id = $1`
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	conn, err := pr.storage.GetPgConnPool().Acquire(context.Background())
 	if err != nil {
@@ -133,16 +178,22 @@ func (pr *PrivilegeRepository) DeletePrivilege(id int) error {
 	}
 	defer conn.Release()
 
-	_, err = conn.Exec(context.Background(), query, id)
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	// tx := pr.postgres_conn.GetDB().MustBegin()
-	// _, err := tx.Exec(query, id)
-	// if err != nil {
-	// 	return err
-	// }
-	// tx.Commit()
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	_, err = tx.Exec(ctx, query, id)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -45,10 +45,12 @@ func (ph *PrivilageHandler) Register(router *mux.Router) {
 func (ph *PrivilageHandler) handlePrivilageGetByID(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Add("Content-Type", "application/json")
 
+	ctx := r.Context()
+
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
 
-	record, err := ph.service.GetRecordByID(id)
+	record, err := ph.service.GetRecordByID(ctx, id)
 	if err != nil {
 		http.Error(rw, fmt.Sprintf("Unable to get the privilege record with id %d", id), http.StatusInternalServerError)
 		return
@@ -63,7 +65,9 @@ func (ph *PrivilageHandler) handlePrivilageGetByID(rw http.ResponseWriter, r *ht
 func (ph *PrivilageHandler) handlePrivilageGetAll(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Add("Content-Type", "application/json")
 
-	records, err := ph.service.GetAllRecords()
+	ctx := r.Context()
+
+	records, err := ph.service.GetAllRecords(ctx)
 	if err != nil {
 		http.Error(rw, "Unable to get the privilege records", http.StatusInternalServerError)
 		return
@@ -78,6 +82,8 @@ func (ph *PrivilageHandler) handlePrivilageGetAll(rw http.ResponseWriter, r *htt
 func (ph *PrivilageHandler) handlePrivilageCreate(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Add("Content-Type", "application/json")
 
+	ctx := r.Context()
+
 	req := &dto.PrivilegeCreateDTO{}
 
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
@@ -86,7 +92,7 @@ func (ph *PrivilageHandler) handlePrivilageCreate(rw http.ResponseWriter, r *htt
 		return
 	}
 
-	if err := ph.service.CreatePrivilege(req); err != nil {
+	if err := ph.service.CreatePrivilege(ctx, req); err != nil {
 		http.Error(rw, "Unable to create a new privilege record", http.StatusInternalServerError)
 		return
 	}
@@ -96,6 +102,8 @@ func (ph *PrivilageHandler) handlePrivilageCreate(rw http.ResponseWriter, r *htt
 
 func (ph *PrivilageHandler) handlePrivilageUpdate(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Add("Content-Type", "application/json")
+
+	ctx := r.Context()
 
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
@@ -108,7 +116,7 @@ func (ph *PrivilageHandler) handlePrivilageUpdate(rw http.ResponseWriter, r *htt
 		return
 	}
 
-	if err := ph.service.UpdatePrivilege(id, req); err != nil {
+	if err := ph.service.UpdatePrivilege(ctx, id, req); err != nil {
 		http.Error(rw, fmt.Sprintf("Unable to update the privilege record with id %d", id), http.StatusInternalServerError)
 		return
 	}
@@ -119,10 +127,12 @@ func (ph *PrivilageHandler) handlePrivilageUpdate(rw http.ResponseWriter, r *htt
 func (ph *PrivilageHandler) handlePrivilageDelete(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Add("Content-Type", "application/json")
 
+	ctx := r.Context()
+
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
 
-	if err := ph.service.DeletePrivilege(id); err != nil {
+	if err := ph.service.DeletePrivilege(ctx, id); err != nil {
 		http.Error(rw, fmt.Sprintf("Unable to delete the privilege record with id %d", id), http.StatusInternalServerError)
 		return
 	}

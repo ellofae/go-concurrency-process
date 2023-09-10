@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"time"
 
 	"github.com/ellofae/go-concurrency-process/internal/domain"
@@ -23,8 +24,8 @@ func NewPrivilegeService(repo domain.IPrivilegeRepository) domain.IPrivilegeServ
 	}
 }
 
-func (ps *PrivilegeService) GetRecordByID(id int) (*entity.Privilege, error) {
-	record, err := ps.repo.GetRecordByID(id)
+func (ps *PrivilegeService) GetRecordByID(ctx context.Context, id int) (*entity.Privilege, error) {
+	record, err := ps.repo.GetRecordByID(ctx, id)
 	if err != nil {
 		ps.logger.Error("Unable to get record by id", "id", id, "error", err)
 		return nil, err
@@ -33,8 +34,8 @@ func (ps *PrivilegeService) GetRecordByID(id int) (*entity.Privilege, error) {
 	return record, nil
 }
 
-func (ps *PrivilegeService) GetAllRecords() ([]*entity.Privilege, error) {
-	records, err := ps.repo.GetAllRecords()
+func (ps *PrivilegeService) GetAllRecords(ctx context.Context) ([]*entity.Privilege, error) {
+	records, err := ps.repo.GetAllRecords(ctx)
 	if err != nil {
 		ps.logger.Error("Unable to get records of entities from privilege table", "error", err)
 		return nil, err
@@ -43,7 +44,7 @@ func (ps *PrivilegeService) GetAllRecords() ([]*entity.Privilege, error) {
 	return records, nil
 }
 
-func (ps *PrivilegeService) CreatePrivilege(req *dto.PrivilegeCreateDTO) error {
+func (ps *PrivilegeService) CreatePrivilege(ctx context.Context, req *dto.PrivilegeCreateDTO) error {
 	validate := utils.NewValidator()
 
 	if err := validate.Struct(req); err != nil {
@@ -60,7 +61,7 @@ func (ps *PrivilegeService) CreatePrivilege(req *dto.PrivilegeCreateDTO) error {
 		CreatedAt:      time.Now(),
 	}
 
-	if err := ps.repo.CreatePrivilege(entity); err != nil {
+	if err := ps.repo.CreatePrivilege(ctx, entity); err != nil {
 		ps.logger.Error("Unable to create a record in postgres database", "error", err)
 		return err
 	}
@@ -68,7 +69,7 @@ func (ps *PrivilegeService) CreatePrivilege(req *dto.PrivilegeCreateDTO) error {
 	return nil
 }
 
-func (ps *PrivilegeService) UpdatePrivilege(id int, req *dto.PrivilegeUpdateDTO) error {
+func (ps *PrivilegeService) UpdatePrivilege(ctx context.Context, id int, req *dto.PrivilegeUpdateDTO) error {
 	validate := utils.NewValidator()
 
 	if err := validate.Struct(req); err != nil {
@@ -80,7 +81,7 @@ func (ps *PrivilegeService) UpdatePrivilege(id int, req *dto.PrivilegeUpdateDTO)
 		return err
 	}
 
-	if err := ps.repo.UpdatePrivilege(id, req); err != nil {
+	if err := ps.repo.UpdatePrivilege(ctx, id, req); err != nil {
 		ps.logger.Error("Unable to update the record in postgres database", "error", err)
 		return err
 	}
@@ -88,8 +89,8 @@ func (ps *PrivilegeService) UpdatePrivilege(id int, req *dto.PrivilegeUpdateDTO)
 	return nil
 }
 
-func (ps *PrivilegeService) DeletePrivilege(id int) error {
-	if err := ps.repo.DeletePrivilege(id); err != nil {
+func (ps *PrivilegeService) DeletePrivilege(ctx context.Context, id int) error {
+	if err := ps.repo.DeletePrivilege(ctx, id); err != nil {
 		ps.logger.Error("Unable to delete the record in postgres database", "error", err)
 		return err
 	}
