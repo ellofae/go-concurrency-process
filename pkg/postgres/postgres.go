@@ -3,7 +3,9 @@ package postgres
 import (
 	"os"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
 )
 
 type PostgresConn struct {
@@ -20,6 +22,8 @@ func OpenDatabaseConnection() (*PostgresConn, error) {
 }
 
 func PostgresConnection() (*sqlx.DB, error) {
+	godotenv.Load(".env")
+
 	db, err := sqlx.Connect("pgx", os.Getenv("DATABASE_CONNECTION_URI"))
 	if err != nil {
 		return nil, err

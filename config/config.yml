@@ -1,0 +1,12 @@
+# app:
+#   name: 'go-concurrency-process'
+#   version: '1.0.0'
+
+# http:
+#   host: 'localhost'
+#   port: '5432'
+
+# postgres:
+#   user: 'postgres'
+#   password: 'password'
+#   database_name: 'test'

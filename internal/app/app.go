@@ -9,20 +9,18 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ellofae/DatabaseService/app/handler"
-	"github.com/ellofae/DatabaseService/app/router"
+	"github.com/ellofae/go-concurrency-process/internal/controller/handler"
 	"github.com/ellofae/go-concurrency-process/internal/domain/usecase"
 	"github.com/ellofae/go-concurrency-process/internal/repository"
 	"github.com/ellofae/go-concurrency-process/pkg/postgres"
+	"github.com/gorilla/mux"
 	"github.com/hashicorp/go-hclog"
+	"github.com/joho/godotenv"
 )
 
 func Run() {
-	logger := hclog.New(&hclog.LoggerOptions{
-		Name:       "go-concurrency-processing",
-		Level:      hclog.LevelFromString("ERROR"),
-		TimeFormat: "2006-01-02 15:04:05",
-	})
+	godotenv.Load(".env")
+	logger := hclog.Default()
 
 	// establishing connection with postgres database
 	databaseConnection, err := postgres.OpenDatabaseConnection()
@@ -32,16 +30,17 @@ func Run() {
 	}
 
 	// repository
-	privilegeRepository := repository.NewPrivilegeRepository(logger, databaseConnection)
+	privilegeRepository := repository.NewPrivilegeRepository(databaseConnection)
 
 	// usecase
-	privilegeService := usecase.NewPrivilegeService(logger, privilegeRepository)
+	privilegeService := usecase.NewPrivilegeService(privilegeRepository)
 
 	// handler
 	privilageHandler := handler.NewPrivilegeHandler(logger, privilegeService)
 
 	// router initialization
-	router := router.InitRouter()
+	router := mux.NewRouter()
+	privilageHandler.Register(router)
 
 	// HTTP server
 	readTimeoutSecondsCount, _ := strconv.Atoi(os.Getenv("SERVER_READ_TIMEOUT"))
@@ -51,28 +50,28 @@ func Run() {
 	srv := http.Server{
 		Addr:         os.Getenv("SERVER_BIND_ADDRESS"),
 		Handler:      router,
-		ErrorLog:     logger.StandardLogger(&hclog.StandardLoggerOptions{}),
 		ReadTimeout:  time.Duration(readTimeoutSecondsCount) * time.Second,
 		WriteTimeout: time.Duration(writeTimeoutSecondsCount) * time.Second,
 		IdleTimeout:  time.Duration(idleTimeoutSecondsCount) * time.Second,
 	}
 
 	go func() {
-		logger.Info("Starting the server")
-
-		if err := srv.ListenAndServe(); err != nil {
-			logger.Error("Unable to start the server", "error", err)
+		logger.Info("Starting server...")
+		err := srv.ListenAndServe()
+		if err != nil {
+			logger.Error("Server was stopped", "error", err)
 			os.Exit(1)
 		}
 	}()
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	sig := <-c
-	logger.Info("Signal has been recieved:", sig)
+	signal := <-sigChan
+	logger.Info("signal has been recieved", "signal", signal)
 
-	// gracefully shutdown the server, waiting max 5 seconds for current operations to complete
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	srv.Shutdown(ctx)
 }
