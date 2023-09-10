@@ -30,10 +30,10 @@ func Run() {
 	}
 
 	// repository
-	privilegeRepository := repository.NewPrivilegeRepository(databaseConnection)
+	privilegeRepository := repository.NewPrivilegeRepository(logger, databaseConnection)
 
 	// usecase
-	privilegeService := usecase.NewPrivilegeService(privilegeRepository)
+	privilegeService := usecase.NewPrivilegeService(logger, privilegeRepository)
 
 	// handler
 	privilageHandler := handler.NewPrivilegeHandler(logger, privilegeService)

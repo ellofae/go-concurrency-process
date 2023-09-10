@@ -12,6 +12,10 @@ type PostgresConn struct {
 	conn *sqlx.DB
 }
 
+func (p *PostgresConn) GetDB() *sqlx.DB {
+	return p.conn
+}
+
 func OpenDatabaseConnection() (*PostgresConn, error) {
 	db_conn, err := PostgresConnection()
 	if err != nil {
