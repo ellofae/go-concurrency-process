@@ -7,6 +7,7 @@ import (
 	"github.com/ellofae/go-concurrency-process/internal/domain/entity"
 	"github.com/ellofae/go-concurrency-process/internal/dto"
 	"github.com/ellofae/go-concurrency-process/internal/utils"
+	"github.com/ellofae/go-concurrency-process/pkg/logger"
 	"github.com/hashicorp/go-hclog"
 )
 
@@ -15,9 +16,9 @@ type PrivilegeService struct {
 	repo   domain.IPrivilegeRepository
 }
 
-func NewPrivilegeService(logger hclog.Logger, repo domain.IPrivilegeRepository) domain.IPrivilegeService {
+func NewPrivilegeService(repo domain.IPrivilegeRepository) domain.IPrivilegeService {
 	return &PrivilegeService{
-		logger: logger,
+		logger: logger.GetLogger(),
 		repo:   repo,
 	}
 }

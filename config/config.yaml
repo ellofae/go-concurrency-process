@@ -1,0 +1,13 @@
+PostgresDB:
+  user: 'postgres'
+  password: 'password'
+  host: 'localhost'
+  port: '5432'
+  dbname: 'process'
+  sslmode: 'disable'
+  maxconns: '30'
+Server:
+  bindAddr: '0.0.0.0:8000'
+  readTimeout: '10'
+  writeTimeout: '10'
+  idleTimeout: '5'

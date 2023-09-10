@@ -10,6 +10,7 @@ import (
 	"github.com/ellofae/go-concurrency-process/internal/domain"
 	"github.com/ellofae/go-concurrency-process/internal/dto"
 	"github.com/ellofae/go-concurrency-process/internal/utils"
+	"github.com/ellofae/go-concurrency-process/pkg/logger"
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/go-hclog"
 )
@@ -19,17 +20,17 @@ type PrivilageHandler struct {
 	service domain.IPrivilegeService
 }
 
-func NewPrivilegeHandler(logger hclog.Logger, service domain.IPrivilegeService) controller.IHandler {
+func NewPrivilegeHandler(service domain.IPrivilegeService) controller.IHandler {
 	return &PrivilageHandler{
-		logger:  logger,
+		logger:  logger.GetLogger(),
 		service: service,
 	}
 }
 
 func (ph *PrivilageHandler) Register(router *mux.Router) {
 	getRouter := router.Methods(http.MethodGet).Subrouter()
-	getRouter.HandleFunc("/priv", ph.handlePrivilageGetAll)
 	getRouter.HandleFunc("/priv/{id:[0-9]+}", ph.handlePrivilageGetByID)
+	getRouter.HandleFunc("/priv", ph.handlePrivilageGetAll)
 
 	postRouter := router.Methods(http.MethodPost).Subrouter()
 	postRouter.HandleFunc("/priv", ph.handlePrivilageCreate)

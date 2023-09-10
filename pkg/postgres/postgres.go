@@ -1,41 +1,42 @@
 package postgres
 
 import (
+	"context"
+	"fmt"
 	"os"
+	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/jmoiron/sqlx"
-	"github.com/joho/godotenv"
+	"github.com/ellofae/go-concurrency-process/config"
+	"github.com/ellofae/go-concurrency-process/internal/utils"
+	"github.com/ellofae/go-concurrency-process/pkg/logger"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type PostgresConn struct {
-	conn *sqlx.DB
-}
+func OpenPoolConnection(ctx context.Context, cfg *config.Config) (conn *pgxpool.Pool) {
+	logger := logger.GetLogger()
 
-func (p *PostgresConn) GetDB() *sqlx.DB {
-	return p.conn
-}
+	err := utils.ConnectionAttemps(func() error {
+		var err error
 
-func OpenDatabaseConnection() (*PostgresConn, error) {
-	db_conn, err := PostgresConnection()
+		// 4 parrallel connections by default(now)
+		conn, err = pgxpool.New(ctx, fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=%s",
+			cfg.PostgresDB.User,
+			cfg.PostgresDB.Password,
+			cfg.PostgresDB.Host,
+			cfg.PostgresDB.Port,
+			cfg.PostgresDB.DBName,
+			cfg.PostgresDB.SSLmode,
+		))
+
+		return err
+	}, 3, time.Duration(2)*time.Second)
+
 	if err != nil {
-		return nil, err
+		logger.Error("Didn't manage to make connection with database", "message", err.Error())
+		os.Exit(1)
 	}
 
-	return &PostgresConn{conn: db_conn}, nil
-}
+	logger.Info("Database connection is established successfully.")
 
-func PostgresConnection() (*sqlx.DB, error) {
-	godotenv.Load(".env")
-
-	db, err := sqlx.Connect("pgx", os.Getenv("DATABASE_CONNECTION_URI"))
-	if err != nil {
-		return nil, err
-	}
-
-	if err := db.Ping(); err != nil {
-		return nil, err
-	}
-
-	return db, nil
+	return conn
 }

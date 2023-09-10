@@ -1,47 +1,57 @@
-// package config
+package config
 
-// import (
-// 	"fmt"
+import (
+	"os"
 
-// 	"github.com/ilyakaznacheev/cleanenv"
-// )
+	"github.com/ellofae/go-concurrency-process/pkg/logger"
+	"github.com/spf13/viper"
+)
 
-// type (
-// 	Config struct {
-// 		App      `yaml:"app"`
-// 		HTTP     `yaml:"http"`
-// 		Postgres `yaml:"postgres`
-// 	}
+type Config struct {
+	PostgresDB struct {
+		User     string `yaml:"user"`
+		Password string `yaml:"password"`
+		Host     string `yaml:"host"`
+		Port     string `yaml:"port"`
+		DBName   string `yaml:"dbname"`
+		SSLmode  string `yaml:"sslmode"`
+		MaxConns string `yaml:"maxconns"`
+	}
 
-// 	App struct {
-// 		Name    string `yaml:"name" env:"APPLICATION_NAME"`
-// 		Version string `yaml:"version" env:"APPLICATION_VERSION"`
-// 	}
+	Server struct {
+		BindAddr     string `yaml:"bindAddr"`
+		ReadTimeout  string `yaml:"readTimeout"`
+		WriteTimeout string `yaml:"writeTimeout"`
+		IdleTimeout  string `yaml:"idleTimeout"`
+	}
+}
 
-// 	HTTP struct {
-// 		Host string `yaml:"host" env:"HOST"`
-// 		Port string `yaml:"port" env:"PORT"`
-// 	}
+func ConfigureViper() *viper.Viper {
+	logger := logger.GetLogger()
 
-// 	Postgres struct {
-// 		User         string `yaml:"user" env:"USER"`
-// 		Password     string `yaml:"password" env:"PASSWORD"`
-// 		DatabaseName string `yaml:"database_name" env:"DATABASE_NAME"`
-// 	}
-// )
+	v := viper.New()
+	v.AddConfigPath("./config")
+	v.SetConfigName("config")
+	v.SetConfigType("yaml")
 
-// func NewConfig() (*Config, error) {
-// 	cfg := &Config{}
+	err := v.ReadInConfig()
+	if err != nil {
+		logger.Error("Unable to read the configuration file.", "error", err.Error())
+		os.Exit(1)
+	}
+	logger.Info("Config loaded successfully.")
 
-// 	err := cleanenv.ReadConfig("./config/config.yml", cfg)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("config error: %v", err)
-// 	}
+	return v
+}
 
-// 	err = cleanenv.ReadEnv(cfg)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func ParseConfig(v *viper.Viper) *Config {
+	logger := logger.GetLogger()
 
-// 	return cfg, nil
-// }
+	cfg := &Config{}
+	if err := v.Unmarshal(cfg); err != nil {
+		logger.Error("Unable to parse the configuration file.")
+	}
+	logger.Info("Configuratin file parsed successfully.")
+
+	return cfg
+}
