@@ -134,3 +134,12 @@ func (ps *PrivilegeUsecase) AddPrivilegeToUser(ctx context.Context, req *dto.Pri
 
 	return nil
 }
+
+func (ps *PrivilegeUsecase) DeletePrivilegeUser(ctx context.Context, id int) error {
+	if err := ps.repo.DeletePrivilegeUser(ctx, id); err != nil {
+		ps.logger.Error("Unable to delete the record in postgres database", "error", err)
+		return err
+	}
+
+	return nil
+}

@@ -229,3 +229,35 @@ func (pr *PrivilegeRepository) AddPrivilegeToUser(ctx context.Context, user_id i
 
 	return nil
 }
+
+func (pr *PrivilegeRepository) DeletePrivilegeUser(ctx context.Context, id int) error {
+	query := `DELETE FROM privileged_users WHERE user_id = $1`
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	conn, err := pr.storage.GetPgConnPool().Acquire(context.Background())
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	_, err = tx.Exec(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

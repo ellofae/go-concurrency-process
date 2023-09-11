@@ -29,14 +29,15 @@ func NewPrivilegeHandler(privilegeUsecase domain.IPrivilegeUsecase) controller.I
 func (ph *PrivilageHandler) Register(router *mux.Router) {
 	getRouter := router.Methods(http.MethodGet).Subrouter()
 	getRouter.HandleFunc("/priv", ph.handlePrivilegeGetByTitle)
-	getRouter.HandleFunc("/priv/users", ph.handleGetAllUsers)
+	getRouter.HandleFunc("/priv/user/", ph.handleGetAllUsers)
 
 	postRouter := router.Methods(http.MethodPost).Subrouter()
 	postRouter.HandleFunc("/priv", ph.handlePrivilegeCreate)
-	postRouter.HandleFunc("/priv/add", ph.handleAttachPrivilegeToUser)
+	postRouter.HandleFunc("/priv/user/add", ph.handleAttachPrivilegeToUser)
 
 	deleteRouter := router.Methods(http.MethodDelete).Subrouter()
 	deleteRouter.HandleFunc("/priv/{id:[0-9]+}", ph.handlePrivilegeDelete)
+	deleteRouter.HandleFunc("/priv/user/{id:[0-9]+}", ph.handlePrivilegeUserDelete)
 }
 
 func (ph *PrivilageHandler) handlePrivilegeGetByTitle(rw http.ResponseWriter, r *http.Request) {
@@ -130,4 +131,19 @@ func (ph *PrivilageHandler) handleAttachPrivilegeToUser(rw http.ResponseWriter, 
 	}
 
 	rw.WriteHeader(http.StatusCreated)
+}
+
+func (ph *PrivilageHandler) handlePrivilegeUserDelete(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Add("Content-Type", "application/json")
+	ctx := r.Context()
+
+	vars := mux.Vars(r)
+	id, _ := strconv.Atoi(vars["id"])
+
+	if err := ph.privilegeUsecase.DeletePrivilegeUser(ctx, id); err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	rw.WriteHeader(http.StatusOK)
 }
