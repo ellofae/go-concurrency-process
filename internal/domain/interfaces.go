@@ -38,7 +38,6 @@ type (
 
 	ICounterRepository interface {
 		GetStorage() map[string]int
-		ProcessConcurrency(name string, val int)
 		SetValue(name string, val int) int
 		IncreaseCounter(name string, val int) int
 		DecreaseCounter(name string, val int) int

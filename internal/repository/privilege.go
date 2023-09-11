@@ -47,8 +47,7 @@ func (pr *PrivilegeRepository) closeTransaction(ctx context.Context, tx pgx.Tx, 
 	}
 }
 
-// Repository querying
-
+// Database querying
 func (pr *PrivilegeRepository) GetRecordByID(ctx context.Context, priv_id int) (string, error) {
 	query := `SELECT * FROM privileges WHERE id = $1`
 	entity := &entity.Privilege{}

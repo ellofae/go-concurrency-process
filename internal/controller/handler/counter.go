@@ -56,10 +56,12 @@ func (ch *CounterHandler) handleIncreaseCounter(rw http.ResponseWriter, r *http.
 	name := r.URL.Query().Get("name")
 
 	currentValue := ch.counterUsecase.IncreaseCounter(name, val)
-	if err := utils.ToJSON(currentValue, rw); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	if currentValue == -1 {
+		ch.logger.Warn("MaxInt ceiling has been hit")
+		http.Error(rw, "Ceiling of MaxInt has been hit", http.StatusBadRequest)
 		return
 	}
+	rw.WriteHeader(http.StatusOK)
 }
 
 func (ch *CounterHandler) handleDecreaseCounter(rw http.ResponseWriter, r *http.Request) {
@@ -69,8 +71,10 @@ func (ch *CounterHandler) handleDecreaseCounter(rw http.ResponseWriter, r *http.
 	name := r.URL.Query().Get("name")
 
 	currentValue := ch.counterUsecase.DecreaseCounter(name, val)
-	if err := utils.ToJSON(currentValue, rw); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	if currentValue == -1 {
+		ch.logger.Warn("0 floor has been hit")
+		http.Error(rw, "Cannot reduce the value when it is is 0", http.StatusBadRequest)
 		return
 	}
+	rw.WriteHeader(http.StatusOK)
 }
