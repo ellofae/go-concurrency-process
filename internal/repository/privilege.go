@@ -9,7 +9,6 @@ import (
 	"github.com/ellofae/go-concurrency-process/pkg/logger"
 	"github.com/hashicorp/go-hclog"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PrivilegeRepository struct {
@@ -24,30 +23,28 @@ func NewPrivilegeRepository(storage *Storage) domain.IPrivilegeRepository {
 	}
 }
 
-// Transaction processing
-func (pr *PrivilegeRepository) beginTransaction(ctx context.Context, conn *pgxpool.Conn) (pgx.Tx, error) {
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return tx, nil
-}
+// func (pr *PrivilegeRepository) beginTransaction(ctx context.Context, conn *pgxpool.Conn) (pgx.Tx, error) {
+// 	tx, err := conn.Begin(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return tx, nil
+// }
 
-func (pr *PrivilegeRepository) closeTransaction(ctx context.Context, tx pgx.Tx, err *error) {
-	if *err != nil {
-		if rollBackError := tx.Rollback(ctx); rollBackError != nil {
-			pr.logger.Warn("Error rolling back transaction", "error", rollBackError)
-			*err = rollBackError
-		}
-	} else {
-		if commitError := tx.Commit(ctx); commitError != nil {
-			pr.logger.Warn("Error commiting transaction", "error", commitError)
-			*err = commitError
-		}
-	}
-}
+// func (pr *PrivilegeRepository) closeTransaction(ctx context.Context, tx pgx.Tx, err *error) {
+// 	if *err != nil {
+// 		if rollBackError := tx.Rollback(ctx); rollBackError != nil {
+// 			pr.logger.Warn("Error rolling back transaction", "error", rollBackError)
+// 			*err = rollBackError
+// 		}
+// 	} else {
+// 		if commitError := tx.Commit(ctx); commitError != nil {
+// 			pr.logger.Warn("Error commiting transaction", "error", commitError)
+// 			*err = commitError
+// 		}
+// 	}
+// }
 
-// Database querying
 func (pr *PrivilegeRepository) GetRecordByID(ctx context.Context, priv_id int) (string, error) {
 	query := `SELECT * FROM privileges WHERE id = $1`
 	entity := &entity.Privilege{}
@@ -61,13 +58,18 @@ func (pr *PrivilegeRepository) GetRecordByID(ctx context.Context, priv_id int) (
 	}
 	defer conn.Release()
 
-	tx, err := pr.beginTransaction(ctx, conn)
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return "", err
 	}
-	defer pr.closeTransaction(ctx, tx, &err)
+	defer tx.Rollback(ctx)
 
-	if err = tx.QueryRow(ctx, query, priv_id).Scan(&entity.ID, &entity.PrivilegeTitle, &entity.CreatedAt); err != nil {
+	if err := tx.QueryRow(ctx, query, priv_id).Scan(&entity.ID, &entity.PrivilegeTitle, &entity.CreatedAt); err != nil {
+		return "", err
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
 		return "", err
 	}
 
@@ -87,13 +89,18 @@ func (pr *PrivilegeRepository) GetRecordByTitle(ctx context.Context, title strin
 	}
 	defer conn.Release()
 
-	tx, err := pr.beginTransaction(ctx, conn)
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer pr.closeTransaction(ctx, tx, &err)
+	defer tx.Rollback(ctx)
 
 	if err = tx.QueryRow(ctx, query, title).Scan(&entity.ID, &entity.PrivilegeTitle, &entity.CreatedAt); err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit(context.Background())
+	if err != nil {
 		return nil, err
 	}
 
@@ -117,11 +124,11 @@ func (pr *PrivilegeRepository) GetAllUsers(ctx context.Context) ([]*entity.Privi
 	}
 	defer conn.Release()
 
-	tx, err := pr.beginTransaction(ctx, conn)
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer pr.closeTransaction(ctx, tx, &tranErr)
+	defer tx.Rollback(ctx)
 
 	rows, tranErr = tx.Query(ctx, query)
 	if tranErr != nil {
@@ -142,6 +149,11 @@ func (pr *PrivilegeRepository) GetAllUsers(ctx context.Context) ([]*entity.Privi
 		return nil, err
 	}
 
+	err = tx.Commit(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
 	return entities, nil
 }
 
@@ -157,13 +169,18 @@ func (pr *PrivilegeRepository) CreatePrivilege(ctx context.Context, req *entity.
 	}
 	defer conn.Release()
 
-	tx, err := pr.beginTransaction(ctx, conn)
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer pr.closeTransaction(ctx, tx, &err)
+	defer tx.Rollback(ctx)
 
 	_, err = tx.Exec(ctx, query, req.PrivilegeTitle, req.CreatedAt)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
 	}
@@ -183,13 +200,18 @@ func (pr *PrivilegeRepository) DeletePrivilege(ctx context.Context, id int) erro
 	}
 	defer conn.Release()
 
-	tx, err := pr.beginTransaction(ctx, conn)
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer pr.closeTransaction(ctx, tx, &err)
+	defer tx.Rollback(ctx)
 
 	_, err = tx.Exec(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
 	}
@@ -209,13 +231,18 @@ func (pr *PrivilegeRepository) AddPrivilegeToUser(ctx context.Context, user_id i
 	}
 	defer conn.Release()
 
-	tx, err := pr.beginTransaction(ctx, conn)
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer pr.closeTransaction(ctx, tx, &err)
+	defer tx.Rollback(ctx)
 
 	_, err = tx.Exec(ctx, query, user_id, priv_id, time.Now())
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
 	}
@@ -235,13 +262,18 @@ func (pr *PrivilegeRepository) DeletePrivilegeUser(ctx context.Context, id int) 
 	}
 	defer conn.Release()
 
-	tx, err := pr.beginTransaction(ctx, conn)
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return err
 	}
-	defer pr.closeTransaction(ctx, tx, &err)
+	defer tx.Rollback(ctx)
 
 	_, err = tx.Exec(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit(context.Background())
 	if err != nil {
 		return err
 	}
