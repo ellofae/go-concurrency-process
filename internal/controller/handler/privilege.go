@@ -18,14 +18,12 @@ import (
 type PrivilageHandler struct {
 	logger           hclog.Logger
 	privilegeUsecase domain.IPrivilegeUsecase
-	userUsecase      domain.IUserUsecase
 }
 
-func NewPrivilegeHandler(privilegeUsecase domain.IPrivilegeUsecase, userUsecase domain.IUserUsecase) controller.IHandler {
+func NewPrivilegeHandler(privilegeUsecase domain.IPrivilegeUsecase) controller.IHandler {
 	return &PrivilageHandler{
 		logger:           logger.GetLogger(),
 		privilegeUsecase: privilegeUsecase,
-		userUsecase:      userUsecase,
 	}
 }
 

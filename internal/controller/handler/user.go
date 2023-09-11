@@ -10,11 +10,11 @@ import (
 
 type UserHandler struct {
 	logger      hclog.Logger
-	userService domain.IUserUsecase
+	userUsecase domain.IUserUsecase
 }
 
 func NewUserHandler(userUsecase domain.IUserUsecase) controller.IHandler {
-	return &PrivilageHandler{
+	return &UserHandler{
 		logger:      logger.GetLogger(),
 		userUsecase: userUsecase,
 	}

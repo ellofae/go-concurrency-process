@@ -46,12 +46,13 @@ func InitRouter(storage *repository.Storage) *mux.Router {
 	userUsecase := usecase.NewUserUsecase(userRepository)
 
 	// handlers
+	privilageHandler := handler.NewPrivilegeHandler(privilegeUsecase)
 	userHandler := handler.NewUserHandler(userUsecase)
-	privilageHandler := handler.NewPrivilegeHandler(privilegeUsecase, userHandler)
 
 	// router initialization
 	router := mux.NewRouter()
 	privilageHandler.Register(router)
+	userHandler.Register(router)
 
 	return router
 }
