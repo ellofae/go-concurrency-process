@@ -56,9 +56,10 @@ func (ph *PrivilageHandler) handlePrivilegeGetByTitle(rw http.ResponseWriter, r 
 	}
 
 	if err = utils.ToJSON(record, rw); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		ph.logger.Error("Unable to sezialize data", "error", err.Error())
 		return
 	}
+	rw.WriteHeader(http.StatusOK)
 }
 
 func (ph *PrivilageHandler) handlePrivilegeCreate(rw http.ResponseWriter, r *http.Request) {
@@ -105,9 +106,10 @@ func (ph *PrivilageHandler) handleGetAllUsers(rw http.ResponseWriter, r *http.Re
 	}
 
 	if err = utils.ToJSON(records, rw); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		ph.logger.Error("Unable to sezialize data", "error", err.Error())
 		return
 	}
+	rw.WriteHeader(http.StatusOK)
 }
 
 func (ph *PrivilageHandler) handleAttachPrivilegeToUser(rw http.ResponseWriter, r *http.Request) {

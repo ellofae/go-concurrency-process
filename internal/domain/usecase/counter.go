@@ -27,14 +27,15 @@ func (cu *CounterUsecase) SetValue(name string, val int) int {
 func (cu *CounterUsecase) IncreaseCounter(name string, val int) int {
 	storage := cu.repo.GetStorage()
 	if _, ok := storage[name]; ok {
-		if storage[name]+val > math.MaxInt {
+		if storage[name]+val <= math.MaxInt {
+			return cu.repo.IncreaseCounter(name, val)
+		} else {
 			return -1
 		}
 	} else {
 		storage[name] = 0
+		return -2
 	}
-
-	return cu.repo.IncreaseCounter(name, val)
 }
 
 func (cu *CounterUsecase) DecreaseCounter(name string, val int) int {

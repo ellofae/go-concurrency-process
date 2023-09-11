@@ -6,11 +6,14 @@ import (
 
 	"github.com/ellofae/go-concurrency-process/internal/controller"
 	"github.com/ellofae/go-concurrency-process/internal/domain"
-	"github.com/ellofae/go-concurrency-process/internal/utils"
 	"github.com/ellofae/go-concurrency-process/pkg/logger"
 	"github.com/gorilla/mux"
 	"github.com/hashicorp/go-hclog"
 )
+
+type Response struct {
+	Message string `json:"message"`
+}
 
 type CounterHandler struct {
 	logger         hclog.Logger
@@ -42,11 +45,9 @@ func (ch *CounterHandler) handleSetCounter(rw http.ResponseWriter, r *http.Reque
 	val, _ := strconv.Atoi(vars["val"])
 	name := r.URL.Query().Get("name")
 
-	currentValue := ch.counterUsecase.SetValue(name, val)
-	if err := utils.ToJSON(currentValue, rw); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	_ = ch.counterUsecase.SetValue(name, val)
+
+	rw.WriteHeader(http.StatusOK)
 }
 
 func (ch *CounterHandler) handleIncreaseCounter(rw http.ResponseWriter, r *http.Request) {
@@ -58,9 +59,12 @@ func (ch *CounterHandler) handleIncreaseCounter(rw http.ResponseWriter, r *http.
 	currentValue := ch.counterUsecase.IncreaseCounter(name, val)
 	if currentValue == -1 {
 		ch.logger.Warn("MaxInt ceiling has been hit")
-		http.Error(rw, "Ceiling of MaxInt has been hit", http.StatusBadRequest)
+		return
+	} else if currentValue == 2 {
+		ch.logger.Warn("Default value is set to zero")
 		return
 	}
+
 	rw.WriteHeader(http.StatusOK)
 }
 
@@ -72,9 +76,9 @@ func (ch *CounterHandler) handleDecreaseCounter(rw http.ResponseWriter, r *http.
 
 	currentValue := ch.counterUsecase.DecreaseCounter(name, val)
 	if currentValue == -1 {
-		ch.logger.Warn("0 floor has been hit")
-		http.Error(rw, "Cannot reduce the value when it is is 0", http.StatusBadRequest)
+		ch.logger.Warn("Current value is zero, set the new one to continue decrementing")
 		return
 	}
+
 	rw.WriteHeader(http.StatusOK)
 }
