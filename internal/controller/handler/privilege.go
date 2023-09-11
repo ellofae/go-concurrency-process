@@ -28,7 +28,7 @@ func NewPrivilegeHandler(privilegeUsecase domain.IPrivilegeUsecase) controller.I
 func (ph *PrivilageHandler) Register(router *mux.Router) {
 	getRouter := router.Methods(http.MethodGet).Subrouter()
 	getRouter.HandleFunc("/priv", ph.handlePrivilegeGetByTitle)
-	getRouter.HandleFunc("/priv/user/", ph.handleGetAllUsers)
+	getRouter.HandleFunc("/priv/user", ph.handleGetAllUsers)
 
 	postRouter := router.Methods(http.MethodPost).Subrouter()
 	postRouter.HandleFunc("/priv", ph.handlePrivilegeCreate)
