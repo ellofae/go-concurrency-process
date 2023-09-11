@@ -9,19 +9,21 @@ import (
 
 type (
 	IPrivilegeUsecase interface {
-		CreatePrivilege(context.Context, *dto.PrivilegeCreateDTO) error
-		UpdatePrivilege(context.Context, int, *dto.PrivilegeUpdateDTO) error
+		GetAllRecords(context.Context) ([]*dto.PrivilegeResponseDTO, error)
+		GetRecordByTitle(context.Context, *dto.PrivilegeDTO) (*dto.PrivilegeResponseDTO, error)
+		CreatePrivilege(context.Context, *dto.PrivilegeDTO) error
 		DeletePrivilege(context.Context, int) error
-		GetAllRecords(context.Context) ([]*entity.Privilege, error)
-		GetRecordByID(context.Context, int) (*entity.Privilege, error)
+
+		UpdatePrivilege(context.Context, int, *dto.PrivilegeUpdateDTO) error
 	}
 
 	IPrivilegeRepository interface {
-		CreatePrivilege(context.Context, *entity.Privilege) error
-		UpdatePrivilege(context.Context, int, *dto.PrivilegeUpdateDTO) error
-		DeletePrivilege(context.Context, int) error
 		GetAllRecords(context.Context) ([]*entity.Privilege, error)
-		GetRecordByID(context.Context, int) (*entity.Privilege, error)
+		GetRecordByTitle(context.Context, string) (*entity.Privilege, error)
+		CreatePrivilege(context.Context, *entity.Privilege) error
+		DeletePrivilege(context.Context, int) error
+
+		UpdatePrivilege(context.Context, int, *dto.PrivilegeUpdateDTO) error
 	}
 
 	IUserUsecase interface {

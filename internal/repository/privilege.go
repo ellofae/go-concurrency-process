@@ -22,8 +22,8 @@ func NewPrivilegeRepository(storage *Storage) domain.IPrivilegeRepository {
 	}
 }
 
-func (pr *PrivilegeRepository) GetRecordByID(ctx context.Context, id int) (*entity.Privilege, error) {
-	query := `SELECT * FROM privileges WHERE id = $1`
+func (pr *PrivilegeRepository) GetRecordByTitle(ctx context.Context, title string) (*entity.Privilege, error) {
+	query := `SELECT * FROM privileges WHERE privilege_title = $1`
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -47,7 +47,7 @@ func (pr *PrivilegeRepository) GetRecordByID(ctx context.Context, id int) (*enti
 		}
 	}()
 
-	if err := tx.QueryRow(ctx, query, id).Scan(&entity.ID, &entity.PrivilegeTitle, &entity.CreatedAt); err != nil {
+	if err := tx.QueryRow(ctx, query, title).Scan(&entity.ID, &entity.PrivilegeTitle, &entity.CreatedAt); err != nil {
 		return nil, err
 	}
 

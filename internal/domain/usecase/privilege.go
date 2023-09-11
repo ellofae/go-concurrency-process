@@ -24,27 +24,43 @@ func NewPrivilegeUsecase(repo domain.IPrivilegeRepository) domain.IPrivilegeUsec
 	}
 }
 
-func (ps *PrivilegeUsecase) GetRecordByID(ctx context.Context, id int) (*entity.Privilege, error) {
-	record, err := ps.repo.GetRecordByID(ctx, id)
+func (ps *PrivilegeUsecase) GetRecordByTitle(ctx context.Context, req *dto.PrivilegeDTO) (*dto.PrivilegeResponseDTO, error) {
+	record, err := ps.repo.GetRecordByTitle(ctx, req.PrivilegeTitle)
 	if err != nil {
-		ps.logger.Error("Unable to get record by id", "id", id, "error", err)
+		ps.logger.Error("Unable to get record by title", "title requested", req.PrivilegeTitle)
 		return nil, err
 	}
 
-	return record, nil
+	resp := &dto.PrivilegeResponseDTO{
+		ID:             record.ID,
+		PrivilegeTitle: record.PrivilegeTitle,
+	}
+
+	return resp, nil
 }
 
-func (ps *PrivilegeUsecase) GetAllRecords(ctx context.Context) ([]*entity.Privilege, error) {
-	records, err := ps.repo.GetAllRecords(ctx)
+func (ps *PrivilegeUsecase) GetAllRecords(ctx context.Context) ([]*dto.PrivilegeResponseDTO, error) {
+	records := []*dto.PrivilegeResponseDTO{}
+
+	entities, err := ps.repo.GetAllRecords(ctx)
 	if err != nil {
 		ps.logger.Error("Unable to get records of entities from privilege table", "error", err)
 		return nil, err
 	}
 
+	for _, entity := range entities {
+		record := &dto.PrivilegeResponseDTO{
+			ID:             entity.ID,
+			PrivilegeTitle: entity.PrivilegeTitle,
+		}
+
+		records = append(records, record)
+	}
+
 	return records, nil
 }
 
-func (ps *PrivilegeUsecase) CreatePrivilege(ctx context.Context, req *dto.PrivilegeCreateDTO) error {
+func (ps *PrivilegeUsecase) CreatePrivilege(ctx context.Context, req *dto.PrivilegeDTO) error {
 	validate := utils.NewValidator()
 
 	if err := validate.Struct(req); err != nil {
@@ -95,5 +111,9 @@ func (ps *PrivilegeUsecase) DeletePrivilege(ctx context.Context, id int) error {
 		return err
 	}
 
+	return nil
+}
+
+func (ps *PrivilegeUsecase) AddPrivilegeToUser(context.Context, *dto.PrivilegedUserCreateDTO) error {
 	return nil
 }
