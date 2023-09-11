@@ -49,7 +49,7 @@ func (pr *PrivilegeRepository) GetRecordByID(ctx context.Context, priv_id int) (
 	query := `SELECT * FROM privileges WHERE id = $1`
 	entity := &entity.Privilege{}
 
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	conn, err := pr.storage.GetPgConnPool().Acquire(ctx)
@@ -79,7 +79,7 @@ func (pr *PrivilegeRepository) GetRecordByID(ctx context.Context, priv_id int) (
 func (pr *PrivilegeRepository) GetRecordByTitle(ctx context.Context, title string) (*entity.Privilege, error) {
 	query := `SELECT * FROM privileges WHERE privilege_title = $1`
 
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	entity := &entity.Privilege{}
@@ -113,7 +113,7 @@ func (pr *PrivilegeRepository) GetAllUsers(ctx context.Context) ([]*entity.Privi
 	var tranErr error
 	var rows pgx.Rows
 
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	entities := []*entity.PrivilegedUser{}
@@ -160,7 +160,7 @@ func (pr *PrivilegeRepository) GetAllUsers(ctx context.Context) ([]*entity.Privi
 func (pr *PrivilegeRepository) CreatePrivilege(ctx context.Context, req *entity.Privilege) error {
 	query := `INSERT INTO privileges(privilege_title, created_at) VALUES ($1, $2)`
 
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	conn, err := pr.storage.GetPgConnPool().Acquire(ctx)
@@ -191,7 +191,7 @@ func (pr *PrivilegeRepository) CreatePrivilege(ctx context.Context, req *entity.
 func (pr *PrivilegeRepository) DeletePrivilege(ctx context.Context, id int) error {
 	query := `DELETE FROM privileges WHERE id = $1`
 
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	conn, err := pr.storage.GetPgConnPool().Acquire(context.Background())
@@ -222,7 +222,7 @@ func (pr *PrivilegeRepository) DeletePrivilege(ctx context.Context, id int) erro
 func (pr *PrivilegeRepository) AddPrivilegeToUser(ctx context.Context, user_id int, priv_id int) error {
 	query := `INSERT INTO privileged_users (user_id, privilege_id, assigned_at) VALUES ($1, $2, $3)`
 
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	conn, err := pr.storage.GetPgConnPool().Acquire(context.Background())
@@ -253,7 +253,7 @@ func (pr *PrivilegeRepository) AddPrivilegeToUser(ctx context.Context, user_id i
 func (pr *PrivilegeRepository) DeletePrivilegeUser(ctx context.Context, id int) error {
 	query := `DELETE FROM privileged_users WHERE user_id = $1`
 
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	conn, err := pr.storage.GetPgConnPool().Acquire(context.Background())
