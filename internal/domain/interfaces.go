@@ -30,9 +30,17 @@ type (
 		DeletePrivilegeUser(ctx context.Context, id int) error
 	}
 
-	IUserUsecase interface {
+	ICounterUsecase interface {
+		SetValue(name string, val int) int
+		IncreaseCounter(name string, val int) int
+		DecreaseCounter(name string, val int) int
 	}
 
-	IUserRepository interface {
+	ICounterRepository interface {
+		GetStorage() map[string]int
+		ProcessConcurrency(name string, val int)
+		SetValue(name string, val int) int
+		IncreaseCounter(name string, val int) int
+		DecreaseCounter(name string, val int) int
 	}
 )

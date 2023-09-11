@@ -39,20 +39,20 @@ func Run() {
 func InitRouter(storage *repository.Storage) *mux.Router {
 	// repositories
 	privilegeRepository := repository.NewPrivilegeRepository(storage)
-	userRepository := repository.NewUserRepository(storage)
+	counterRepository := repository.NewCounterRepository()
 
 	// usecases
 	privilegeUsecase := usecase.NewPrivilegeUsecase(privilegeRepository)
-	userUsecase := usecase.NewUserUsecase(userRepository)
+	counterUsecase := usecase.NewCounterUsecase(counterRepository)
 
 	// handlers
 	privilageHandler := handler.NewPrivilegeHandler(privilegeUsecase)
-	userHandler := handler.NewUserHandler(userUsecase)
+	counterHandler := handler.NewCounterHandler(counterUsecase)
 
 	// router initialization
 	router := mux.NewRouter()
 	privilageHandler.Register(router)
-	userHandler.Register(router)
+	counterHandler.Register(router)
 
 	return router
 }
