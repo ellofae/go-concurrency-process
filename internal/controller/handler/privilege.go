@@ -29,13 +29,11 @@ func NewPrivilegeHandler(privilegeUsecase domain.IPrivilegeUsecase) controller.I
 func (ph *PrivilageHandler) Register(router *mux.Router) {
 	getRouter := router.Methods(http.MethodGet).Subrouter()
 	getRouter.HandleFunc("/priv", ph.handlePrivilegeGetByTitle)
-	getRouter.HandleFunc("/priv/all", ph.handlePrivilegeGetAll)
+	getRouter.HandleFunc("/priv/users", ph.handleGetAllUsers)
 
 	postRouter := router.Methods(http.MethodPost).Subrouter()
 	postRouter.HandleFunc("/priv", ph.handlePrivilegeCreate)
-
-	putRouter := router.Methods(http.MethodPut).Subrouter()
-	putRouter.HandleFunc("/priv/{id:[0-9]+}", ph.handlePrivilegeUpdate)
+	postRouter.HandleFunc("/priv/add", ph.handleAttachPrivilegeToUser)
 
 	deleteRouter := router.Methods(http.MethodDelete).Subrouter()
 	deleteRouter.HandleFunc("/priv/{id:[0-9]+}", ph.handlePrivilegeDelete)
@@ -64,22 +62,6 @@ func (ph *PrivilageHandler) handlePrivilegeGetByTitle(rw http.ResponseWriter, r 
 	}
 }
 
-func (ph *PrivilageHandler) handlePrivilegeGetAll(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Add("Content-Type", "application/json")
-	ctx := r.Context()
-
-	records, err := ph.privilegeUsecase.GetAllRecords(ctx)
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if err = utils.ToJSON(records, rw); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
 func (ph *PrivilageHandler) handlePrivilegeCreate(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Add("Content-Type", "application/json")
 	ctx := r.Context()
@@ -100,28 +82,6 @@ func (ph *PrivilageHandler) handlePrivilegeCreate(rw http.ResponseWriter, r *htt
 	rw.WriteHeader(http.StatusCreated)
 }
 
-func (ph *PrivilageHandler) handlePrivilegeUpdate(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Add("Content-Type", "application/json")
-	ctx := r.Context()
-
-	vars := mux.Vars(r)
-	id, _ := strconv.Atoi(vars["id"])
-
-	req := &dto.PrivilegeUpdateDTO{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		ph.logger.Error("Unable to decode the request data", "error", err)
-		http.Error(rw, "Incorrect request has been made", http.StatusBadRequest)
-		return
-	}
-
-	if err := ph.privilegeUsecase.UpdatePrivilege(ctx, id, req); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	rw.WriteHeader(http.StatusOK)
-}
-
 func (ph *PrivilageHandler) handlePrivilegeDelete(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Add("Content-Type", "application/json")
 	ctx := r.Context()
@@ -135,4 +95,39 @@ func (ph *PrivilageHandler) handlePrivilegeDelete(rw http.ResponseWriter, r *htt
 	}
 
 	rw.WriteHeader(http.StatusOK)
+}
+
+func (ph *PrivilageHandler) handleGetAllUsers(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Add("Content-Type", "application/json")
+	ctx := r.Context()
+
+	records, err := ph.privilegeUsecase.GetAllUsers(ctx)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err = utils.ToJSON(records, rw); err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (ph *PrivilageHandler) handleAttachPrivilegeToUser(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Add("Content-Type", "application/json")
+	ctx := r.Context()
+
+	req := &dto.PrivilegedUserDTO{}
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		ph.logger.Error("Unable to decode the request data", "error", err)
+		http.Error(rw, "Incorrect request has been made", http.StatusBadRequest)
+		return
+	}
+
+	if err := ph.privilegeUsecase.AddPrivilegeToUser(ctx, req); err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	rw.WriteHeader(http.StatusCreated)
 }

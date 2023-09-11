@@ -2,10 +2,10 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/ellofae/go-concurrency-process/internal/domain"
 	"github.com/ellofae/go-concurrency-process/internal/domain/entity"
-	"github.com/ellofae/go-concurrency-process/internal/dto"
 	"github.com/ellofae/go-concurrency-process/pkg/logger"
 	"github.com/hashicorp/go-hclog"
 )
@@ -20,6 +20,38 @@ func NewPrivilegeRepository(storage *Storage) domain.IPrivilegeRepository {
 		logger:  logger.GetLogger(),
 		storage: storage,
 	}
+}
+
+func (pr *PrivilegeRepository) GetRecordByID(ctx context.Context, priv_id int) (string, error) {
+	query := `SELECT * FROM privileges WHERE id = $1`
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	entity := &entity.Privilege{}
+	conn, err := pr.storage.GetPgConnPool().Acquire(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer conn.Release()
+
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	if err := tx.QueryRow(ctx, query, priv_id).Scan(&entity.ID, &entity.PrivilegeTitle, &entity.CreatedAt); err != nil {
+		return "", err
+	}
+
+	return entity.PrivilegeTitle, nil
 }
 
 func (pr *PrivilegeRepository) GetRecordByTitle(ctx context.Context, title string) (*entity.Privilege, error) {
@@ -54,13 +86,13 @@ func (pr *PrivilegeRepository) GetRecordByTitle(ctx context.Context, title strin
 	return entity, nil
 }
 
-func (pr *PrivilegeRepository) GetAllRecords(ctx context.Context) ([]*entity.Privilege, error) {
-	query := `SELECT * FROM privileges`
+func (pr *PrivilegeRepository) GetAllUsers(ctx context.Context) ([]*entity.PrivilegedUser, error) {
+	query := `SELECT * FROM privileged_users`
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	entities := []*entity.Privilege{}
+	entities := []*entity.PrivilegedUser{}
 
 	conn, err := pr.storage.GetPgConnPool().Acquire(context.Background())
 	if err != nil {
@@ -86,9 +118,9 @@ func (pr *PrivilegeRepository) GetAllRecords(ctx context.Context) ([]*entity.Pri
 	}
 
 	for rows.Next() {
-		privilege := &entity.Privilege{}
+		privilege := &entity.PrivilegedUser{}
 
-		err := rows.Scan(&privilege.ID, &privilege.PrivilegeTitle, &privilege.CreatedAt)
+		err := rows.Scan(&privilege.UserID, &privilege.PrivilegeID, &privilege.AssignedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -134,38 +166,6 @@ func (pr *PrivilegeRepository) CreatePrivilege(ctx context.Context, req *entity.
 	return nil
 }
 
-func (pr *PrivilegeRepository) UpdatePrivilege(ctx context.Context, id int, req *dto.PrivilegeUpdateDTO) error {
-	query := `UPDATE privileges SET privilege_title = $2 WHERE id = $1`
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	conn, err := pr.storage.GetPgConnPool().Acquire(context.Background())
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback(ctx)
-		} else {
-			tx.Commit(ctx)
-		}
-	}()
-
-	_, err = tx.Exec(ctx, query, id, req.PrivilegeTitle)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (pr *PrivilegeRepository) DeletePrivilege(ctx context.Context, id int) error {
 	query := `DELETE FROM privileges WHERE id = $1`
 
@@ -191,6 +191,38 @@ func (pr *PrivilegeRepository) DeletePrivilege(ctx context.Context, id int) erro
 	}()
 
 	_, err = tx.Exec(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (pr *PrivilegeRepository) AddPrivilegeToUser(ctx context.Context, user_id int, priv_id int) error {
+	query := `INSERT INTO privileged_users (user_id, privilege_id, assigned_at) VALUES ($1, $2, $3)`
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	conn, err := pr.storage.GetPgConnPool().Acquire(context.Background())
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	_, err = tx.Exec(ctx, query, user_id, priv_id, time.Now())
 	if err != nil {
 		return err
 	}
