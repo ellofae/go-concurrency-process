@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -45,9 +44,8 @@ func (ph *PrivilageHandler) handlePrivilegeGetByTitle(rw http.ResponseWriter, r 
 	ctx := r.Context()
 
 	req := &dto.PrivilegeDTO{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		ph.logger.Error("Unable to decode the request data", "error", err)
-		http.Error(rw, "Incorrect request has been made", http.StatusBadRequest)
+	if err := utils.StructDecode(r, req); err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -68,9 +66,7 @@ func (ph *PrivilageHandler) handlePrivilegeCreate(rw http.ResponseWriter, r *htt
 	ctx := r.Context()
 
 	req := &dto.PrivilegeDTO{}
-
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		ph.logger.Error("Unable to decode the request data", "error", err)
+	if err := utils.StructDecode(r, req); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -119,9 +115,8 @@ func (ph *PrivilageHandler) handleAttachPrivilegeToUser(rw http.ResponseWriter, 
 	ctx := r.Context()
 
 	req := &dto.PrivilegedUserDTO{}
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		ph.logger.Error("Unable to decode the request data", "error", err)
-		http.Error(rw, "Incorrect request has been made", http.StatusBadRequest)
+	if err := utils.StructDecode(r, req); err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
