@@ -8,7 +8,7 @@ import (
 )
 
 type (
-	IPrivilegeService interface {
+	IPrivilegeUsecase interface {
 		CreatePrivilege(context.Context, *dto.PrivilegeCreateDTO) error
 		UpdatePrivilege(context.Context, int, *dto.PrivilegeUpdateDTO) error
 		DeletePrivilege(context.Context, int) error
@@ -22,5 +22,11 @@ type (
 		DeletePrivilege(context.Context, int) error
 		GetAllRecords(context.Context) ([]*entity.Privilege, error)
 		GetRecordByID(context.Context, int) (*entity.Privilege, error)
+	}
+
+	IUserUsecase interface {
+	}
+
+	IUserRepository interface {
 	}
 )

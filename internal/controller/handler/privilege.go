@@ -16,14 +16,16 @@ import (
 )
 
 type PrivilageHandler struct {
-	logger  hclog.Logger
-	service domain.IPrivilegeService
+	logger           hclog.Logger
+	privilegeUsecase domain.IPrivilegeUsecase
+	userUsecase      domain.IUserUsecase
 }
 
-func NewPrivilegeHandler(service domain.IPrivilegeService) controller.IHandler {
+func NewPrivilegeHandler(privilegeUsecase domain.IPrivilegeUsecase, userUsecase domain.IUserUsecase) controller.IHandler {
 	return &PrivilageHandler{
-		logger:  logger.GetLogger(),
-		service: service,
+		logger:           logger.GetLogger(),
+		privilegeUsecase: privilegeUsecase,
+		userUsecase:      userUsecase,
 	}
 }
 
@@ -50,7 +52,7 @@ func (ph *PrivilageHandler) handlePrivilageGetByID(rw http.ResponseWriter, r *ht
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
 
-	record, err := ph.service.GetRecordByID(ctx, id)
+	record, err := ph.privilegeUsecase.GetRecordByID(ctx, id)
 	if err != nil {
 		http.Error(rw, fmt.Sprintf("Unable to get the privilege record with id %d", id), http.StatusInternalServerError)
 		return
@@ -67,7 +69,7 @@ func (ph *PrivilageHandler) handlePrivilageGetAll(rw http.ResponseWriter, r *htt
 
 	ctx := r.Context()
 
-	records, err := ph.service.GetAllRecords(ctx)
+	records, err := ph.privilegeUsecase.GetAllRecords(ctx)
 	if err != nil {
 		http.Error(rw, "Unable to get the privilege records", http.StatusInternalServerError)
 		return
@@ -92,7 +94,7 @@ func (ph *PrivilageHandler) handlePrivilageCreate(rw http.ResponseWriter, r *htt
 		return
 	}
 
-	if err := ph.service.CreatePrivilege(ctx, req); err != nil {
+	if err := ph.privilegeUsecase.CreatePrivilege(ctx, req); err != nil {
 		http.Error(rw, "Unable to create a new privilege record", http.StatusInternalServerError)
 		return
 	}
@@ -116,7 +118,7 @@ func (ph *PrivilageHandler) handlePrivilageUpdate(rw http.ResponseWriter, r *htt
 		return
 	}
 
-	if err := ph.service.UpdatePrivilege(ctx, id, req); err != nil {
+	if err := ph.privilegeUsecase.UpdatePrivilege(ctx, id, req); err != nil {
 		http.Error(rw, fmt.Sprintf("Unable to update the privilege record with id %d", id), http.StatusInternalServerError)
 		return
 	}
@@ -132,7 +134,7 @@ func (ph *PrivilageHandler) handlePrivilageDelete(rw http.ResponseWriter, r *htt
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
 
-	if err := ph.service.DeletePrivilege(ctx, id); err != nil {
+	if err := ph.privilegeUsecase.DeletePrivilege(ctx, id); err != nil {
 		http.Error(rw, fmt.Sprintf("Unable to delete the privilege record with id %d", id), http.StatusInternalServerError)
 		return
 	}
