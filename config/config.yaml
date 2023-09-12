@@ -6,6 +6,7 @@ PostgresDB:
   dbname: 'postgres'
   sslmode: 'disable'
   maxconns: '30'
+  
 Server:
   bindAddr: '0.0.0.0:8000'
   readTimeout: '10'
