@@ -70,6 +70,14 @@ The project utilizes the CQRS (Command Query Responsibility Segregation) and SRP
 
 ## Concurrency part
 ___
+
+Public endpoints:
+
+    GET /set/{val:[0-9]+} - set local storage
+    GET /inc/{val:[0-9]+} - increase local storage
+    GET /dec/{val:[0-9]+} - decrease local storage
+
+___
 The concurrency part is an implementation of working with channels and goroutines. Specifically, it includes a pipeline implementation to control race conditions during the execution of multiple parallel requests. The aim is to ensure thread safety and prevent data races.
 
 The implementation has been thoroughly tested using ApacheBench to verify its effectiveness.
