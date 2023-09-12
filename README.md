@@ -76,8 +76,8 @@ The implementation has been thoroughly tested using ApacheBench to verify its ef
 
 #### Benchmarking
 
-![main](https://imgur.com/vWCVFfo)
+![main](https://i.imgur.com/vWCVFfo.png)
 
 #### Connection time
 
-![main](https://imgur.com/WKFmIYZ)
+![main](https://i.imgur.com/WKFmIYZ.png)
