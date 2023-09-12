@@ -73,3 +73,11 @@ ___
 The concurrency part is an implementation of working with channels and goroutines. Specifically, it includes a pipeline implementation to control race conditions during the execution of multiple parallel requests. The aim is to ensure thread safety and prevent data races.
 
 The implementation has been thoroughly tested using ApacheBench to verify its effectiveness.
+
+#### Benchmarking
+
+![main](https://imgur.com/vWCVFfo)
+
+#### Connection time
+
+![main](https://imgur.com/WKFmIYZ)
