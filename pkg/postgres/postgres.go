@@ -21,7 +21,6 @@ func OpenPoolConnection(ctx context.Context, cfg *config.Config) (conn *pgxpool.
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
-		// 4 parrallel connections by default(now)
 		conn, err = pgxpool.New(ctx, fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=%s",
 			cfg.PostgresDB.User,
 			cfg.PostgresDB.Password,

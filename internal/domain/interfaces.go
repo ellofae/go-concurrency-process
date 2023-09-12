@@ -25,6 +25,8 @@ type (
 		CreatePrivilege(context.Context, *entity.Privilege) error
 		DeletePrivilege(context.Context, int) error
 
+		GetUserPrivilegesByID(context.Context, int) ([]int, error)
+		GetUserByID(context.Context, int) (int, error)
 		GetAllUsers(context.Context) ([]*entity.PrivilegedUser, error)
 		AddPrivilegeToUser(context.Context, int, int) error
 		DeletePrivilegeUser(ctx context.Context, id int) error

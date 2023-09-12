@@ -6,6 +6,7 @@ import (
 
 	"github.com/ellofae/go-concurrency-process/internal/domain"
 	"github.com/ellofae/go-concurrency-process/internal/domain/entity"
+	"github.com/ellofae/go-concurrency-process/internal/errors"
 	"github.com/ellofae/go-concurrency-process/pkg/logger"
 	"github.com/hashicorp/go-hclog"
 	"github.com/jackc/pgx/v5"
@@ -65,6 +66,9 @@ func (pr *PrivilegeRepository) GetRecordByID(ctx context.Context, priv_id int) (
 	defer tx.Rollback(ctx)
 
 	if err := tx.QueryRow(ctx, query, priv_id).Scan(&entity.ID, &entity.PrivilegeTitle, &entity.CreatedAt); err != nil {
+		if err == pgx.ErrNoRows {
+			return "", errors.ErrNoRecordFound
+		}
 		return "", err
 	}
 
@@ -74,6 +78,40 @@ func (pr *PrivilegeRepository) GetRecordByID(ctx context.Context, priv_id int) (
 	}
 
 	return entity.PrivilegeTitle, nil
+}
+
+func (pr *PrivilegeRepository) GetUserByID(ctx context.Context, user_id int) (int, error) {
+	query := `SELECT * FROM privileged_users WHERE user_id = $1`
+	entity := &entity.PrivilegedUser{}
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	conn, err := pr.storage.GetPgConnPool().Acquire(ctx)
+	if err != nil {
+		return -1, err
+	}
+	defer conn.Release()
+
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return -1, err
+	}
+	defer tx.Rollback(ctx)
+
+	if err := tx.QueryRow(ctx, query, user_id).Scan(&entity.UserID, &entity.PrivilegeID, &entity.AssignedAt); err != nil {
+		if err == pgx.ErrNoRows {
+			return -1, errors.ErrNoRecordFound
+		}
+		return entity.UserID, err
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return -1, err
+	}
+
+	return entity.UserID, nil
 }
 
 func (pr *PrivilegeRepository) GetRecordByTitle(ctx context.Context, title string) (*entity.Privilege, error) {
@@ -96,6 +134,9 @@ func (pr *PrivilegeRepository) GetRecordByTitle(ctx context.Context, title strin
 	defer tx.Rollback(ctx)
 
 	if err = tx.QueryRow(ctx, query, title).Scan(&entity.ID, &entity.PrivilegeTitle, &entity.CreatedAt); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, errors.ErrNoRecordFound
+		}
 		return nil, err
 	}
 
@@ -107,11 +148,54 @@ func (pr *PrivilegeRepository) GetRecordByTitle(ctx context.Context, title strin
 	return entity, nil
 }
 
+func (pr *PrivilegeRepository) GetUserPrivilegesByID(ctx context.Context, user_id int) ([]int, error) {
+	query := `SELECT * FROM privileged_users WHERE user_id = $1`
+	privileges := []int{}
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	conn, err := pr.storage.GetPgConnPool().Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Release()
+
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+
+	rows, err := tx.Query(ctx, query, user_id)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		privilege := &entity.PrivilegedUser{}
+
+		err := rows.Scan(&privilege.UserID, &privilege.PrivilegeID, &privilege.AssignedAt)
+		if err != nil {
+			return nil, err
+		}
+		privileges = append(privileges, privilege.PrivilegeID)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return privileges, nil
+}
+
 func (pr *PrivilegeRepository) GetAllUsers(ctx context.Context) ([]*entity.PrivilegedUser, error) {
 	query := `SELECT * FROM privileged_users`
-
-	var tranErr error
-	var rows pgx.Rows
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -130,9 +214,9 @@ func (pr *PrivilegeRepository) GetAllUsers(ctx context.Context) ([]*entity.Privi
 	}
 	defer tx.Rollback(ctx)
 
-	rows, tranErr = tx.Query(ctx, query)
-	if tranErr != nil {
-		return nil, tranErr
+	rows, err := tx.Query(ctx, query)
+	if err != nil {
+		return nil, err
 	}
 
 	for rows.Next() {

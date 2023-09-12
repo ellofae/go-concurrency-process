@@ -7,6 +7,7 @@ import (
 	"github.com/ellofae/go-concurrency-process/internal/domain"
 	"github.com/ellofae/go-concurrency-process/internal/domain/entity"
 	"github.com/ellofae/go-concurrency-process/internal/dto"
+	"github.com/ellofae/go-concurrency-process/internal/errors"
 	"github.com/ellofae/go-concurrency-process/internal/utils"
 	"github.com/ellofae/go-concurrency-process/pkg/logger"
 	"github.com/hashicorp/go-hclog"
@@ -27,7 +28,6 @@ func NewPrivilegeUsecase(repo domain.IPrivilegeRepository) domain.IPrivilegeUsec
 func (ps *PrivilegeUsecase) GetRecordByTitle(ctx context.Context, req *dto.PrivilegeDTO) (*dto.PrivilegeResponseDTO, error) {
 	record, err := ps.repo.GetRecordByTitle(ctx, req.PrivilegeTitle)
 	if err != nil {
-		ps.logger.Error("Unable to get record by title", "title requested", req.PrivilegeTitle)
 		return nil, err
 	}
 
@@ -42,7 +42,6 @@ func (ps *PrivilegeUsecase) GetRecordByTitle(ctx context.Context, req *dto.Privi
 func (ps *PrivilegeUsecase) GetRecordByID(ctx context.Context, priv_id int) (string, error) {
 	privilege, err := ps.repo.GetRecordByID(ctx, priv_id)
 	if err != nil {
-		ps.logger.Error("Unable to get the record title")
 		return "", err
 	}
 
@@ -66,8 +65,16 @@ func (ps *PrivilegeUsecase) CreatePrivilege(ctx context.Context, req *dto.Privil
 		CreatedAt:      time.Now(),
 	}
 
+	_, err := ps.repo.GetRecordByTitle(ctx, req.PrivilegeTitle)
+	if err == nil {
+		return errors.ErrRecordAlreadyExists
+	} else {
+		if err != errors.ErrNoRecordFound {
+			return err
+		}
+	}
+
 	if err := ps.repo.CreatePrivilege(ctx, entity); err != nil {
-		ps.logger.Error("Unable to create a record in postgres database", "error", err)
 		return err
 	}
 
@@ -75,8 +82,15 @@ func (ps *PrivilegeUsecase) CreatePrivilege(ctx context.Context, req *dto.Privil
 }
 
 func (ps *PrivilegeUsecase) DeletePrivilege(ctx context.Context, id int) error {
+	_, err := ps.GetRecordByID(ctx, id)
+	if err != nil {
+		if err == errors.ErrNoRecordFound {
+			return errors.ErrNoRecordFound
+		}
+		return err
+	}
+
 	if err := ps.repo.DeletePrivilege(ctx, id); err != nil {
-		ps.logger.Error("Unable to delete the record in postgres database", "error", err)
 		return err
 	}
 
@@ -88,7 +102,6 @@ func (ps *PrivilegeUsecase) GetAllUsers(ctx context.Context) ([]*dto.PrivilegedU
 
 	entities, err := ps.repo.GetAllUsers(ctx)
 	if err != nil {
-		ps.logger.Error("Unable to get records of privileged users table", "error", err)
 		return nil, err
 	}
 
@@ -123,12 +136,26 @@ func (ps *PrivilegeUsecase) AddPrivilegeToUser(ctx context.Context, req *dto.Pri
 
 	entity, err := ps.repo.GetRecordByTitle(ctx, req.Privilege)
 	if err != nil {
-		ps.logger.Error("Unable to get record by title", "title requested", req.Privilege)
 		return err
 	}
 
+	privileged_ids, err := ps.repo.GetUserPrivilegesByID(ctx, req.UserID)
+	if err != nil {
+		return err
+	}
+
+	for _, privilege := range privileged_ids {
+		record_privilege, err := ps.repo.GetRecordByID(ctx, privilege)
+		if err != nil {
+			return err
+		}
+
+		if record_privilege == req.Privilege {
+			return errors.ErrRecordAlreadyExists
+		}
+	}
+
 	if err := ps.repo.AddPrivilegeToUser(ctx, req.UserID, entity.ID); err != nil {
-		ps.logger.Error("Unable to add privilege to user", "error", err)
 		return err
 	}
 
@@ -136,8 +163,12 @@ func (ps *PrivilegeUsecase) AddPrivilegeToUser(ctx context.Context, req *dto.Pri
 }
 
 func (ps *PrivilegeUsecase) DeletePrivilegeUser(ctx context.Context, id int) error {
+	_, err := ps.repo.GetUserByID(ctx, id)
+	if err != nil {
+		return err
+	}
+
 	if err := ps.repo.DeletePrivilegeUser(ctx, id); err != nil {
-		ps.logger.Error("Unable to delete the record in postgres database", "error", err)
 		return err
 	}
 
