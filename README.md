@@ -71,7 +71,7 @@ The project utilizes the CQRS (Command Query Responsibility Segregation) and SRP
 ## Concurrency part
 ___
 
-Public endpoints:
+#### Public endpoints:
 
     GET /set/{val:[0-9]+} - set local storage
     GET /inc/{val:[0-9]+} - increase local storage
