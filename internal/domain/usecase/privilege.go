@@ -122,7 +122,7 @@ func (ps *PrivilegeUsecase) GetAllUsers(ctx context.Context) ([]*dto.PrivilegedU
 	return records, nil
 }
 
-func (ps *PrivilegeUsecase) AddPrivilegeToUser(ctx context.Context, req *dto.PrivilegedUserDTO) error {
+func (ps *PrivilegeUsecase) AddPrivilegeToUser(ctx context.Context, req *dto.PrivilegedUserCreateDTO) (string, error) {
 	validate := utils.NewValidator()
 
 	if err := validate.Struct(req); err != nil {
@@ -131,35 +131,91 @@ func (ps *PrivilegeUsecase) AddPrivilegeToUser(ctx context.Context, req *dto.Pri
 			ps.logger.Error("Validation error", "error", error)
 		}
 
-		return err
+		return "", err
 	}
 
-	entity, err := ps.repo.GetRecordByTitle(ctx, req.Privilege)
-	if err != nil {
-		return err
-	}
-
-	privileged_ids, err := ps.repo.GetUserPrivilegesByID(ctx, req.UserID)
-	if err != nil {
-		return err
-	}
-
-	for _, privilege := range privileged_ids {
-		record_privilege, err := ps.repo.GetRecordByID(ctx, privilege)
+	userID := req.UserID
+	for _, privilege := range req.PrivilegeList {
+		entity, err := ps.repo.GetRecordByTitle(ctx, privilege)
 		if err != nil {
-			return err
+			return "", err
 		}
 
-		if record_privilege == req.Privilege {
-			return errors.ErrRecordAlreadyExists
+		privileged_ids, err := ps.repo.GetUserPrivilegesByID(ctx, req.UserID)
+		if err != nil {
+			return "", err
 		}
+
+		for _, privilege_id := range privileged_ids {
+			record_privilege, err := ps.repo.GetRecordByID(ctx, privilege_id)
+			if err != nil {
+				return "", err
+			}
+
+			if record_privilege == privilege {
+				return privilege, errors.ErrRecordAlreadyExists
+			}
+		}
+
+		if err := ps.repo.AddPrivilegeToUser(ctx, userID, entity.ID); err != nil {
+			return "", err
+		}
+
 	}
 
-	if err := ps.repo.AddPrivilegeToUser(ctx, req.UserID, entity.ID); err != nil {
-		return err
+	return "", nil
+}
+
+func (ps *PrivilegeUsecase) RemoveUserPrivilege(ctx context.Context, req *dto.PrivilegedUserDeleteDTO) (string, error) {
+	validate := utils.NewValidator()
+
+	if err := validate.Struct(req); err != nil {
+		validation_errors := utils.ValidatorErrors(err)
+		for _, error := range validation_errors {
+			ps.logger.Error("Validation error", "error", error)
+		}
+
+		return "", err
 	}
 
-	return nil
+	userID := req.UserID
+
+	flag := false
+	for _, privilege := range req.PrivilegeList {
+		entity, err := ps.repo.GetRecordByTitle(ctx, privilege)
+		if err != nil {
+			return "", err
+		}
+
+		privileged_ids, err := ps.repo.GetUserPrivilegesByID(ctx, req.UserID)
+		if err != nil {
+			return "", err
+		}
+
+		for _, privilege_id := range privileged_ids {
+			record_privilege, err := ps.repo.GetRecordByID(ctx, privilege_id)
+			if err != nil {
+				return "", err
+			}
+
+			if record_privilege == privilege {
+				flag = true
+				break
+			}
+		}
+
+		if flag {
+			if err := ps.repo.RemoveUserPrivilege(ctx, userID, entity.ID); err != nil {
+				return "", err
+			}
+		} else {
+			return privilege, errors.ErrNoRecordFound
+		}
+
+		flag = false
+	}
+
+	return "", nil
 }
 
 func (ps *PrivilegeUsecase) DeletePrivilegeUser(ctx context.Context, id int) error {

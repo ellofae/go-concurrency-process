@@ -35,6 +35,7 @@ func (ph *PrivilageHandler) Register(router *mux.Router) {
 	postRouter := router.Methods(http.MethodPost).Subrouter()
 	postRouter.HandleFunc("/priv", ph.handlePrivilegeCreate)
 	postRouter.HandleFunc("/priv/user/add", ph.handleAttachPrivilegeToUser)
+	postRouter.HandleFunc("/priv/user/remove", ph.handleRemoveUserPrivilege)
 
 	deleteRouter := router.Methods(http.MethodDelete).Subrouter()
 	deleteRouter.HandleFunc("/priv/{id:[0-9]+}", ph.handlePrivilegeDelete)
@@ -147,21 +148,21 @@ func (ph *PrivilageHandler) handleAttachPrivilegeToUser(rw http.ResponseWriter, 
 	rw.Header().Add("Content-Type", "application/json")
 	ctx := r.Context()
 
-	req := &dto.PrivilegedUserDTO{}
+	req := &dto.PrivilegedUserCreateDTO{}
 	if err := utils.StructDecode(r, req); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err := ph.privilegeUsecase.AddPrivilegeToUser(ctx, req)
+	priv, err := ph.privilegeUsecase.AddPrivilegeToUser(ctx, req)
 	if err != nil {
 		if err == errors.ErrNoRecordFound {
 			ph.logger.Error("No privilege record with such title exists", "error", err)
 			http.Error(rw, err.Error(), http.StatusNotFound)
 			return
 		} else if err == errors.ErrRecordAlreadyExists {
-			ph.logger.Error("Such privilege is already assigned to the user", "error", err)
-			http.Error(rw, err.Error(), http.StatusBadRequest)
+			ph.logger.Error("Such privilege is already assigned to the user", "privilege", priv, "error", err)
+			http.Error(rw, fmt.Sprintf("%s: %s", err.Error(), priv), http.StatusBadRequest)
 			return
 		}
 
@@ -171,7 +172,34 @@ func (ph *PrivilageHandler) handleAttachPrivilegeToUser(rw http.ResponseWriter, 
 	}
 
 	rw.WriteHeader(http.StatusCreated)
-	rw.Write([]byte(`{"message": "Record has been created"}`))
+	rw.Write([]byte(`{"message": "Records have been created"}`))
+}
+
+func (ph *PrivilageHandler) handleRemoveUserPrivilege(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Add("Content-Type", "application/json")
+	ctx := r.Context()
+
+	req := &dto.PrivilegedUserDeleteDTO{}
+	if err := utils.StructDecode(r, req); err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	priv, err := ph.privilegeUsecase.RemoveUserPrivilege(ctx, req)
+	if err != nil {
+		if err == errors.ErrNoRecordFound {
+			ph.logger.Error("No privilege record with such title attached to the user", "error", err)
+			http.Error(rw, fmt.Sprintf("%s: %s", err.Error(), priv), http.StatusNotFound)
+			return
+		}
+
+		ph.logger.Error("Internal error", "message", err.Error())
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	rw.WriteHeader(http.StatusOK)
+	rw.Write([]byte(`{"message": "Privileges have been deleted"}`))
 }
 
 func (ph *PrivilageHandler) handlePrivilegeUserDelete(rw http.ResponseWriter, r *http.Request) {

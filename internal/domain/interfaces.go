@@ -15,8 +15,9 @@ type (
 		DeletePrivilege(context.Context, int) error
 
 		GetAllUsers(context.Context) ([]*dto.PrivilegedUserDTO, error)
-		AddPrivilegeToUser(context.Context, *dto.PrivilegedUserDTO) error
-		DeletePrivilegeUser(ctx context.Context, id int) error
+		AddPrivilegeToUser(context.Context, *dto.PrivilegedUserCreateDTO) (string, error)
+		RemoveUserPrivilege(context.Context, *dto.PrivilegedUserDeleteDTO) (string, error)
+		DeletePrivilegeUser(context.Context, int) error
 	}
 
 	IPrivilegeRepository interface {
@@ -29,7 +30,8 @@ type (
 		GetUserByID(context.Context, int) (int, error)
 		GetAllUsers(context.Context) ([]*entity.PrivilegedUser, error)
 		AddPrivilegeToUser(context.Context, int, int) error
-		DeletePrivilegeUser(ctx context.Context, id int) error
+		RemoveUserPrivilege(context.Context, int, int) error
+		DeletePrivilegeUser(context.Context, int) error
 	}
 
 	ICounterUsecase interface {
