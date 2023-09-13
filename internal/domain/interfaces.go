@@ -35,6 +35,7 @@ type (
 	}
 
 	ICounterUsecase interface {
+		GetStorage() map[string]int
 		SetValue(name string, val int) int
 		IncreaseCounter(name string, val int) int
 		DecreaseCounter(name string, val int) int

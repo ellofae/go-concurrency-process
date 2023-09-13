@@ -24,6 +24,10 @@ func (cu *CounterUsecase) SetValue(name string, val int) int {
 	return cu.repo.SetValue(name, val)
 }
 
+func (cu *CounterUsecase) GetStorage() map[string]int {
+	return cu.repo.GetStorage()
+}
+
 func (cu *CounterUsecase) IncreaseCounter(name string, val int) int {
 	storage := cu.repo.GetStorage()
 	if _, ok := storage[name]; ok {
