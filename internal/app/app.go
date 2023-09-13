@@ -25,7 +25,7 @@ func Run() {
 
 	connPool := postgres.OpenPoolConnection(ctx, cfg)
 	if err := connPool.Ping(ctx); err != nil {
-		logger.Error("Unable to ping the database connection")
+		logger.Error("Unable to ping the database connection", "error", err)
 		os.Exit(1)
 	}
 	storage := repository.NewStorage(connPool)

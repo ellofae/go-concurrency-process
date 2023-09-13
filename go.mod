@@ -3,11 +3,10 @@ module github.com/ellofae/go-concurrency-process
 go 1.20
 
 require (
-	github.com/go-playground/validator/v10 v10.15.3
+	github.com/go-playground/validator/v10 v10.15.4
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-hclog v1.5.0
 	github.com/jackc/pgx/v5 v5.4.3
-	github.com/jmoiron/sqlx v1.3.5
 	github.com/spf13/viper v1.16.0
 )
 

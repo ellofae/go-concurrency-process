@@ -1,0 +1,31 @@
+version: '3'
+services:
+  app:
+    build: .
+    container_name: application_container
+    ports:
+      - 8000:8000
+    restart: unless-stopped
+    volumes:
+    - go_cache:/go/pkg/mod/
+    - "/etc/timezone:/etc/timezone:ro"
+    - "/etc/localtime:/etc/localtime:ro"
+    depends_on:
+      - database
+
+  database:
+    image: postgres:latest
+    container_name: database
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: postgres
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+
+volumes:
+  dbdata:
+  go_cache:
