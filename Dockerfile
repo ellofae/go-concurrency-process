@@ -17,11 +17,14 @@ RUN go build -o /cmd/app ./cmd/app
 FROM busybox as intermediate
 
 RUN mkdir /config
+RUN mkdir /migrations
 COPY --from=builder /src/config/config.yaml /config/config.yaml
+COPY --from=builder /src/migrations /migrations
 
 FROM scratch as build
 
 COPY --from=builder /cmd/app /bin/app
 COPY --from=intermediate /config/config.yaml /config/config.yaml
+COPY --from=intermediate /migrations /migrations
 
 ENTRYPOINT ["/bin/app"]

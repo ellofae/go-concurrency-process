@@ -6,6 +6,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/golang-migrate/migrate/v4/source/github"
+
 	"github.com/ellofae/go-concurrency-process/config"
 	"github.com/ellofae/go-concurrency-process/internal/utils"
 	"github.com/ellofae/go-concurrency-process/pkg/logger"
@@ -41,4 +46,30 @@ func OpenPoolConnection(ctx context.Context, cfg *config.Config) (conn *pgxpool.
 	logger.Info("Database connection is established successfully.")
 
 	return conn
+}
+
+func RunMigrationsUp(ctx context.Context, cfg *config.Config) {
+	logger := logger.GetLogger()
+
+	db_conn := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=%s",
+		cfg.PostgresDB.User,
+		cfg.PostgresDB.Password,
+		cfg.PostgresDB.Host,
+		cfg.PostgresDB.Port,
+		cfg.PostgresDB.DBName,
+		cfg.PostgresDB.SSLmode,
+	)
+
+	migration, err := migrate.New("file://migrations", db_conn)
+	if err != nil {
+		logger.Error("Unable to get a migrate instance", "error", err.Error())
+		os.Exit(1)
+	}
+
+	err = migration.Up()
+	if err != nil {
+		logger.Error("Unable to migrate up", "error", err.Error())
+		os.Exit(1)
+	}
+	logger.Info("Migrations are up successfully.")
 }

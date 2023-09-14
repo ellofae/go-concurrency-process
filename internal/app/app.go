@@ -28,6 +28,8 @@ func Run() {
 		logger.Error("Unable to ping the database connection", "error", err)
 		os.Exit(1)
 	}
+	postgres.RunMigrationsUp(ctx, cfg)
+
 	storage := repository.NewStorage(connPool)
 
 	router := InitRouter(storage)
