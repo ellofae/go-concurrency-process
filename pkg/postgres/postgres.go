@@ -68,6 +68,11 @@ func RunMigrationsUp(ctx context.Context, cfg *config.Config) {
 
 	err = migration.Up()
 	if err != nil {
+		if err == migrate.ErrNoChange {
+			logger.Warn("No changes while migrating")
+			return
+		}
+
 		logger.Error("Unable to migrate up", "error", err.Error())
 		os.Exit(1)
 	}
