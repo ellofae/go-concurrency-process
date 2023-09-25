@@ -80,8 +80,6 @@ github.com/go-playground/universal-translator v0.18.1/go.mod h1:xekY+UJKNuX9WP91
 github.com/go-playground/validator/v10 v10.15.4 h1:zMXza4EpOdooxPel5xDqXEdXG5r+WggpvnAKMsalBjs=
 github.com/go-playground/validator/v10 v10.15.4/go.mod h1:9iXMNT7sEkjXb0I+enO7QXmzG6QCsPWY4zveKFVRSyU=
 github.com/gogo/protobuf v1.3.2 h1:Ov1cvc58UF3b5XjBnZv7+opcTcQFZebYjWzi34vdm4Q=
-github.com/golang-migrate/migrate v3.5.4+incompatible h1:R7OzwvCJTCgwapPCiX6DyBiu2czIUMDCB118gFTKTUA=
-github.com/golang-migrate/migrate v3.5.4+incompatible/go.mod h1:IsVUlFN5puWOmXrqjgGUfIRIbU7mr8oNBE2tyERd9Wk=
 github.com/golang-migrate/migrate/v4 v4.16.2 h1:8coYbMKUyInrFk1lfGfRovTLAW7PhWp8qQDT2iKfuoA=
 github.com/golang-migrate/migrate/v4 v4.16.2/go.mod h1:pfcJX4nPHaVdc5nmdCikFBWtm+UBpiZjRNNsyBbp0/o=
 github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b/go.mod h1:SBH7ygxi8pfUlaOkMMuAQtPIUF8ecWP5IEl/CR7VP2Q=
