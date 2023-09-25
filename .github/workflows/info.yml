@@ -1,0 +1,22 @@
+name: project-structure
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  os-info:
+    runs-on: ubuntu-latest
+    steps:
+      - name: os-info
+        run: echo "Running on a ${{ runner.os }} server hosted by GitHub."
+
+      - name: project-structure
+        uses: actions/checkout@v4
+
+      - name: ubuntu-tree-package-installation
+        run: sudo apt install tree
+
+      - name: project-tree
+        run: tree
